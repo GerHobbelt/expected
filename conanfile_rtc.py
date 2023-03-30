@@ -17,4 +17,4 @@ class ExpectedConan(ConanFile):
         relative = "3rdparty/expected/"
 
         # headers
-        self.copy("*.hpp", src=base + "include/tl", dst=relative + "include")
+        self.copy("*.hpp", src=base + "include/tl", dst=relative + "include/expected")
