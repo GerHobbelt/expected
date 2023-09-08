@@ -139,7 +139,7 @@ struct in_place_t {
 static constexpr in_place_t in_place{};
 #endif
 
-template <class E> class unexpected {
+template <class E> class [[nodiscard]] unexpected {
 public:
   static_assert(!std::is_same<E, void>::value, "E must not be void");
 
