@@ -71,5 +71,5 @@ TEST_CASE("Assignment deletion", "[assignment.deletion]") {
   };
   tl::expected<except_move, except_move> e3 = {};
   tl::expected<except_move, except_move> e4 = {};
-  // e3 = e4; should not compile
+  e3 = e4;
 }
