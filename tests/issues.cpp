@@ -115,12 +115,12 @@ using MaybeDataPtr = tl::expected<int, std::unique_ptr<int>>;
 
 MaybeDataPtr test(int i) noexcept
 {
-  return std::move(i);
+  return i;
 }
 
 MaybeDataPtr test2(int i) noexcept
 {
-  return std::move(i);
+  return i;
 }
 
 TEST_CASE("Issue 49", "[issues.49]") {
@@ -143,12 +143,12 @@ struct move_tracker {
 
         move_tracker() = default;
 
-        move_tracker(move_tracker const &other) noexcept {};
+        move_tracker(move_tracker const &) noexcept {};
         move_tracker(move_tracker &&orig) noexcept
             : moved(orig.moved + 1) {}
 
         move_tracker &
-        operator=(move_tracker const &other) noexcept {};
+        operator=(move_tracker const &) noexcept { return *this; };
         
         move_tracker &operator=(move_tracker &&orig) noexcept {
           moved = orig.moved + 1;
