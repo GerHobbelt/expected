@@ -1,3 +1,5 @@
+#include <string>
+
 struct no_throw {
   no_throw(std::string i) : i(i) {}
   std::string i;
