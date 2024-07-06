@@ -56,7 +56,7 @@
 #if (__cplusplus > 201103L) && !defined(TL_EXPECTED_GCC49)
 #include <cassert>
 #define TL_ASSERT(x) assert(x)
-#else 
+#else
 #define TL_ASSERT(x)
 #endif
 #endif
@@ -139,7 +139,7 @@ struct in_place_t {
 static constexpr in_place_t in_place{};
 #endif
 
-template <class E> class unexpected {
+template <class E> class [[nodiscard]] unexpected {
 public:
   static_assert(!std::is_same<E, void>::value, "E must not be void");
 
@@ -173,32 +173,32 @@ template <class E> unexpected(E) -> unexpected<E>;
 #endif
 
 template <class E>
-constexpr bool operator==(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+[[nodiscard]] constexpr bool operator==(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() == rhs.value();
 }
 template <class E>
-constexpr bool operator!=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+[[nodiscard]] constexpr bool operator!=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() != rhs.value();
 }
 template <class E>
-constexpr bool operator<(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+[[nodiscard]] constexpr bool operator<(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() < rhs.value();
 }
 template <class E>
-constexpr bool operator<=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+[[nodiscard]] constexpr bool operator<=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() <= rhs.value();
 }
 template <class E>
-constexpr bool operator>(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+[[nodiscard]] constexpr bool operator>(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() > rhs.value();
 }
 template <class E>
-constexpr bool operator>=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
+[[nodiscard]] constexpr bool operator>=(const unexpected<E> &lhs, const unexpected<E> &rhs) {
   return lhs.value() >= rhs.value();
 }
 
 template <class E>
-unexpected<typename std::decay<E>::type> make_unexpected(E &&e) {
+[[nodiscard]] unexpected<typename std::decay<E>::type> make_unexpected(E &&e) {
   return unexpected<typename std::decay<E>::type>(std::forward<E>(e));
 }
 
@@ -627,9 +627,9 @@ template <class E> struct expected_storage_base<void, E, false, true> {
   //no constexpr for GCC 4/5 bug
   #else
   TL_EXPECTED_MSVC2015_CONSTEXPR
-  #endif 
+  #endif
   expected_storage_base() : m_has_val(true) {}
-     
+
   constexpr expected_storage_base(no_init_t) : m_val(), m_has_val(false) {}
 
   constexpr expected_storage_base(in_place_t) : m_has_val(true) {}
@@ -1244,10 +1244,10 @@ private:
 /// has been destroyed. The initialization state of the contained object is
 /// tracked by the expected object.
 template <class T, class E>
-class expected : private detail::expected_move_assign_base<T, E>,
-                 private detail::expected_delete_ctor_base<T, E>,
-                 private detail::expected_delete_assign_base<T, E>,
-                 private detail::expected_default_ctor_base<T, E> {
+class [[nodiscard]] expected : private detail::expected_move_assign_base<T, E>,
+                               private detail::expected_delete_ctor_base<T, E>,
+                               private detail::expected_delete_assign_base<T, E>,
+                               private detail::expected_default_ctor_base<T, E> {
   static_assert(!std::is_reference<T>::value, "T must not be a reference");
   static_assert(!std::is_same<T, std::remove_cv<in_place_t>::type>::value,
                 "T must not be in_place_t");
@@ -2371,28 +2371,28 @@ detail::decay_t<Exp> or_else_impl(Exp &&exp, F &&f) {
 } // namespace detail
 
 template <class T, class E, class U, class F>
-constexpr bool operator==(const expected<T, E> &lhs,
+[[nodiscard]] constexpr bool operator==(const expected<T, E> &lhs,
                           const expected<U, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? false
              : (!lhs.has_value() ? lhs.error() == rhs.error() : *lhs == *rhs);
 }
 template <class T, class E, class U, class F>
-constexpr bool operator!=(const expected<T, E> &lhs,
+[[nodiscard]] constexpr bool operator!=(const expected<T, E> &lhs,
                           const expected<U, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? true
              : (!lhs.has_value() ? lhs.error() != rhs.error() : *lhs != *rhs);
 }
 template <class E, class F>
-constexpr bool operator==(const expected<void, E> &lhs,
+[[nodiscard]] constexpr bool operator==(const expected<void, E> &lhs,
                           const expected<void, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? false
              : (!lhs.has_value() ? lhs.error() == rhs.error() : true);
 }
 template <class E, class F>
-constexpr bool operator!=(const expected<void, E> &lhs,
+[[nodiscard]] constexpr bool operator!=(const expected<void, E> &lhs,
                           const expected<void, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? true
@@ -2400,36 +2400,36 @@ constexpr bool operator!=(const expected<void, E> &lhs,
 }
 
 template <class T, class E, class U>
-constexpr bool operator==(const expected<T, E> &x, const U &v) {
+[[nodiscard]] constexpr bool operator==(const expected<T, E> &x, const U &v) {
   return x.has_value() ? *x == v : false;
 }
 template <class T, class E, class U>
-constexpr bool operator==(const U &v, const expected<T, E> &x) {
+[[nodiscard]] constexpr bool operator==(const U &v, const expected<T, E> &x) {
   return x.has_value() ? *x == v : false;
 }
 template <class T, class E, class U>
-constexpr bool operator!=(const expected<T, E> &x, const U &v) {
+[[nodiscard]] constexpr bool operator!=(const expected<T, E> &x, const U &v) {
   return x.has_value() ? *x != v : true;
 }
 template <class T, class E, class U>
-constexpr bool operator!=(const U &v, const expected<T, E> &x) {
+[[nodiscard]] constexpr bool operator!=(const U &v, const expected<T, E> &x) {
   return x.has_value() ? *x != v : true;
 }
 
 template <class T, class E>
-constexpr bool operator==(const expected<T, E> &x, const unexpected<E> &e) {
+[[nodiscard]] constexpr bool operator==(const expected<T, E> &x, const unexpected<E> &e) {
   return x.has_value() ? false : x.error() == e.value();
 }
 template <class T, class E>
-constexpr bool operator==(const unexpected<E> &e, const expected<T, E> &x) {
+[[nodiscard]] constexpr bool operator==(const unexpected<E> &e, const expected<T, E> &x) {
   return x.has_value() ? false : x.error() == e.value();
 }
 template <class T, class E>
-constexpr bool operator!=(const expected<T, E> &x, const unexpected<E> &e) {
+[[nodiscard]] constexpr bool operator!=(const expected<T, E> &x, const unexpected<E> &e) {
   return x.has_value() ? true : x.error() != e.value();
 }
 template <class T, class E>
-constexpr bool operator!=(const unexpected<E> &e, const expected<T, E> &x) {
+[[nodiscard]] constexpr bool operator!=(const unexpected<E> &e, const expected<T, E> &x) {
   return x.has_value() ? true : x.error() != e.value();
 }
 
