@@ -2396,7 +2396,7 @@ template <class E, class F>
                           const expected<void, F> &rhs) {
   return (lhs.has_value() != rhs.has_value())
              ? true
-             : (!lhs.has_value() ? lhs.error() == rhs.error() : false);
+             : (!lhs.has_value() ? lhs.error() != rhs.error() : false);
 }
 
 template <class T, class E, class U>
