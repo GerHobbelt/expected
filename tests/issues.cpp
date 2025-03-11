@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <system_error>
 
 using std::string;
 
@@ -201,4 +202,23 @@ TEST_CASE("PR 156", "[pr.156]") {
   REQUIRE(!(a != b));
   REQUIRE(a != c);
   REQUIRE(b != c);
+}
+
+class MoveOnly {
+public:
+  MoveOnly() = default;
+
+  // Non-copyable
+  MoveOnly(const MoveOnly &) = delete;
+  MoveOnly &operator=(const MoveOnly &) = delete;
+
+  // Movable trivially
+  MoveOnly(MoveOnly &&) = default;
+  MoveOnly &operator=(MoveOnly &&) = default;
+};
+
+TEST_CASE("Issue 145", "[issues.145]") {
+  tl::expected<MoveOnly, std::error_code> a{};
+  tl::expected<MoveOnly, std::error_code> b = std::move(a);
+  a = std::move(b);
 }

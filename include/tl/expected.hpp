@@ -53,7 +53,7 @@
 
 #if !defined(TL_ASSERT)
 //can't have assert in constexpr in C++11 and GCC 4.9 has a compiler bug
-#if (__cplusplus > 201103L) && !defined(TL_EXPECTED_GCC49)
+#if (TL_CPLUSPLUS > 201103L) && !defined(TL_EXPECTED_GCC49)
 #include <cassert>
 #define TL_ASSERT(x) assert(x)
 #else
@@ -109,7 +109,13 @@ struct is_trivially_copy_constructible<std::vector<T, A>> : std::false_type {};
   std::is_trivially_destructible<T>
 #endif
 
-#if __cplusplus > 201103L || (defined(_MSC_VER) && _MSC_VER >= 1910)
+#ifdef _MSVC_LANG
+#define TL_CPLUSPLUS _MSVC_LANG
+#else
+#define TL_CPLUSPLUS __cplusplus
+#endif
+
+#if TL_CPLUSPLUS > 201103L
 #define TL_EXPECTED_CXX14
 #endif
 
@@ -119,7 +125,7 @@ struct is_trivially_copy_constructible<std::vector<T, A>> : std::false_type {};
 #define TL_EXPECTED_GCC49_CONSTEXPR constexpr
 #endif
 
-#if (__cplusplus == 201103L || defined(TL_EXPECTED_MSVC2015) ||                \
+#if (TL_CPLUSPLUS == 201103L || defined(TL_EXPECTED_MSVC2015) ||                \
      defined(TL_EXPECTED_GCC49))
 #define TL_EXPECTED_11_CONSTEXPR
 #else
@@ -522,6 +528,10 @@ template <class T, class E> struct expected_storage_base<T, E, true, true> {
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
 
+  expected_storage_base(const expected_storage_base &) = default;     
+  expected_storage_base(expected_storage_base &&) = default;
+  expected_storage_base &operator=(const expected_storage_base &) = default;
+  expected_storage_base &operator=(expected_storage_base &&) = default;
   ~expected_storage_base() = default;
   union {
     T m_val;
@@ -563,6 +573,10 @@ template <class T, class E> struct expected_storage_base<T, E, true, false> {
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
 
+  expected_storage_base(const expected_storage_base &) = default;
+  expected_storage_base(expected_storage_base &&) = default;
+  expected_storage_base &operator=(const expected_storage_base &) = default;
+  expected_storage_base &operator=(expected_storage_base &&) = default;
   ~expected_storage_base() {
     if (!m_has_val) {
       m_unexpect.~unexpected<E>();
@@ -608,6 +622,10 @@ template <class T, class E> struct expected_storage_base<T, E, false, true> {
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
 
+  expected_storage_base(const expected_storage_base &) = default;
+  expected_storage_base(expected_storage_base &&) = default;
+  expected_storage_base &operator=(const expected_storage_base &) = default;
+  expected_storage_base &operator=(expected_storage_base &&) = default;
   ~expected_storage_base() {
     if (m_has_val) {
       m_val.~T();
@@ -648,6 +666,10 @@ template <class E> struct expected_storage_base<void, E, false, true> {
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
 
+  expected_storage_base(const expected_storage_base &) = default;
+  expected_storage_base(expected_storage_base &&) = default;
+  expected_storage_base &operator=(const expected_storage_base &) = default;
+  expected_storage_base &operator=(expected_storage_base &&) = default;
   ~expected_storage_base() = default;
   struct dummy {};
   union {
@@ -678,6 +700,10 @@ template <class E> struct expected_storage_base<void, E, false, false> {
                                            Args &&...args)
       : m_unexpect(il, std::forward<Args>(args)...), m_has_val(false) {}
 
+  expected_storage_base(const expected_storage_base &) = default;
+  expected_storage_base(expected_storage_base &&) = default;
+  expected_storage_base &operator=(const expected_storage_base &) = default;
+  expected_storage_base &operator=(expected_storage_base &&) = default;
   ~expected_storage_base() {
     if (!m_has_val) {
       m_unexpect.~unexpected<E>();
@@ -936,14 +962,16 @@ struct expected_operations_base<void, E> : expected_storage_base<void, E> {
 // This specialization is for when T and E are trivially copy constructible
 template <class T, class E,
           bool = is_void_or<T, TL_EXPECTED_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T)>::
-              value &&TL_EXPECTED_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(E)::value>
+              value &&TL_EXPECTED_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(E)::value,
+          bool = (is_copy_constructible_or_void<T>::value &&
+                  std::is_copy_constructible<E>::value)>
 struct expected_copy_base : expected_operations_base<T, E> {
   using expected_operations_base<T, E>::expected_operations_base;
 };
 
-// This specialization is for when T or E are not trivially copy constructible
+// This specialization is for when T or E are non-trivially copy constructible
 template <class T, class E>
-struct expected_copy_base<T, E, false> : expected_operations_base<T, E> {
+struct expected_copy_base<T, E, false, true> : expected_operations_base<T, E> {
   using expected_operations_base<T, E>::expected_operations_base;
 
   expected_copy_base() = default;
@@ -1004,13 +1032,17 @@ template <class T, class E,
                              TL_EXPECTED_IS_TRIVIALLY_DESTRUCTIBLE(T)>>::value
               &&TL_EXPECTED_IS_TRIVIALLY_COPY_ASSIGNABLE(E)::value
                   &&TL_EXPECTED_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(E)::value
-                      &&TL_EXPECTED_IS_TRIVIALLY_DESTRUCTIBLE(E)::value>
+                      &&TL_EXPECTED_IS_TRIVIALLY_DESTRUCTIBLE(E)::value,
+          bool = (is_copy_constructible_or_void<T>::value &&
+             std::is_copy_constructible<E>::value &&
+             is_copy_assignable_or_void<T>::value &&
+             std::is_copy_assignable<E>::value)>
 struct expected_copy_assign_base : expected_move_base<T, E> {
   using expected_move_base<T, E>::expected_move_base;
 };
 
 template <class T, class E>
-struct expected_copy_assign_base<T, E, false> : expected_move_base<T, E> {
+struct expected_copy_assign_base<T, E, false, true> : expected_move_base<T, E> {
   using expected_move_base<T, E>::expected_move_base;
 
   expected_copy_assign_base() = default;
