@@ -1,4 +1,5 @@
 #include <catch2/catch.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <stdexcept>
 
 #define TL_ASSERT(cond) if (!(cond)) { throw std::runtime_error(std::string("assertion failure")); }
